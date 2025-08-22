@@ -5,14 +5,14 @@ const int PIN_ACS = A0;     // D1 Mini: ADC único
 const float ADC_VMAX = 3.3; // máximo do ADC A0
 const int ADC_RES = 1024;   // resolução 10 bits
 
-// ===== ACS712 =====
-const float SENS_V_PER_A = 0.100;    // 20A → 0.100 V/A
-const float OUT_SCALING = 3.3 / 5.0; // divisor 5V → 3.3V
-const float SENS_EFFECTIVE = SENS_V_PER_A * OUT_SCALING;
+// ===== ACS712 ===== (agora configurável)
+float SENS_V_PER_A = 0.100;                        // 20A → 0.100 V/A (padrão, pode ser alterado via serial)
+const float OUT_SCALING = 3.3 / 5.0;               // divisor 5V → 3.3V
+float SENS_EFFECTIVE = SENS_V_PER_A * OUT_SCALING; // atualizado quando SENS_V_PER_A muda
 
-// ===== Rede elétrica =====
-const float MAINS_V = 220.0;    // tensão nominal
-const float PF = 0.90;          // fator de potência estimado
+// ===== Rede elétrica ===== (configuráveis)
+float MAINS_V = 220.0;          // tensão nominal
+float PF = 0.90;                // fator de potência estimado
 const float MAINS_FREQ = 60.0;  // Hz
 const int CYCLES_FAST = 5;      // ciclos p/ leitura rápida (~80-100 ms)
 const int SAMPLE_DELAY_US = 50; // intervalo entre amostras
@@ -78,6 +78,77 @@ void quickBaseline()
   Serial.println(noise_Irms, 4);
 }
 
+// Função para processar comandos serial recebidos
+void processSerialInput()
+{
+  static String inputBuffer = ""; // Buffer para acumular dados
+  while (Serial.available() > 0)
+  {
+    char c = Serial.read();
+    if (c == '\n')
+    { // Fim de mensagem
+      if (inputBuffer.startsWith(">"))
+      {                                         // Início válido
+        inputBuffer = inputBuffer.substring(1); // Remove '>'
+        // Parse comando (ex.: "SET_V,220.0")
+        int commaIndex = inputBuffer.indexOf(',');
+        if (commaIndex != -1)
+        {
+          String cmd = inputBuffer.substring(0, commaIndex);
+          String valueStr = inputBuffer.substring(commaIndex + 1);
+          float value = valueStr.toFloat();
+
+          if (cmd == "SET_V")
+          {
+            MAINS_V = value;
+            Serial.print(">OK,SET_V,");
+            Serial.println(value, 1);
+          }
+          else if (cmd == "SET_PF")
+          {
+            PF = value;
+            Serial.print(">OK,SET_PF,");
+            Serial.println(value, 2);
+          }
+          else if (cmd == "SET_SENS")
+          {
+            SENS_V_PER_A = value;
+            SENS_EFFECTIVE = SENS_V_PER_A * OUT_SCALING; // Atualiza efetiva
+            Serial.print(">OK,SET_SENS,");
+            Serial.println(value, 3);
+          }
+          else if (cmd == "GET_CONFIG")
+          {
+            Serial.print(">CONFIG,V=");
+            Serial.print(MAINS_V, 1);
+            Serial.print(",PF=");
+            Serial.print(PF, 2);
+            Serial.print(",SENS=");
+            Serial.println(SENS_V_PER_A, 3);
+          }
+          else
+          {
+            Serial.println(">ERROR,INVALID_CMD");
+          }
+        }
+        else
+        {
+          Serial.println(">ERROR,NO_DATA");
+        }
+      }
+      else
+      {
+        Serial.println(">ERROR,BAD_START");
+      }
+      inputBuffer = ""; // Limpa buffer
+    }
+    else
+    {
+      inputBuffer += c; // Acumula
+    }
+  }
+}
+
 void setup()
 {
   Serial.begin(115200);
@@ -90,6 +161,8 @@ void setup()
 
 void loop()
 {
+  processSerialInput(); // Processa entradas serial primeiro (não bloqueia)
+
   // Ajuste lento do offset (drift térmico)
   float newOffset = measureOffset_ms(50);
   offsetVolts = 0.98f * offsetVolts + 0.02f * newOffset;
