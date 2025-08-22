@@ -69,7 +69,7 @@ Este firmware ESP8266 é parte de um sistema completo de monitoramento elétrico
 
 1. Clone o repositório:
 ```bash
-git clone https://github.com/seu-usuario/PlugMonitorESP8266.git
+git clone https://github.com/birdra1n/PlugMonitorESP8266.git
 cd PlugMonitorESP8266
 ```
 
