@@ -6,6 +6,8 @@ Um medidor de consumo elétrico em tempo real usando ESP8266 (D1 Mini) e sensor 
 
 Este projeto implementa um monitor de consumo elétrico que mede corrente RMS, potência ativa e energia acumulada (kWh) usando um microcontrolador ESP8266 e sensor de corrente ACS712. O sistema oferece calibração automática, compensação de ruído e configuração via porta serial.
 
+> **🖥️ Interface Desktop**: Este firmware funciona em conjunto com o aplicativo desktop **PlugMonitor** desenvolvido em Electron para visualização e monitoramento dos dados em tempo real. Para a interface completa do usuário, consulte: [PlugMonitor](https://github.com/BirdRa1n/PlugMonitor)
+
 ## ⚡ Características
 
 - **Medição em tempo real**: Corrente RMS, potência ativa e energia acumulada
@@ -31,12 +33,37 @@ GND    → GND
 OUT    → A0 (através de divisor de tensão 5V→3.3V)
 ```
 
+## 🏗️ Arquitetura do Sistema Completo
+
+Este firmware ESP8266 é parte de um sistema completo de monitoramento elétrico:
+
+```
+┌─────────────────┐    Serial/USB    ┌──────────────────┐
+│  ESP8266 + ACS712│ ──────────────► │ Aplicativo Desktop│
+│  (Hardware)     │                 │   PlugMonitor    │
+│                 │ ◄────────────── │   (Electron)     │
+│ • Mede corrente │    Comandos     │                  │
+│ • Calcula potência│                │ • Interface gráfica│
+│ • Envia dados   │                 │ • Configuração   │
+│ • Recebe config │                 │ • Visualização   │
+└─────────────────┘                 └──────────────────┘
+```
+
+**Fluxo de Dados:**
+1. ESP8266 mede corrente via ACS712
+2. Calcula potência e energia acumulada
+3. Envia dados via serial: `I_RMS: X.XXX A | P: XXX.X W | E: X.XXXXXX kWh`
+4. Aplicativo desktop recebe e exibe os dados
+5. Usuário pode configurar parâmetros via aplicativo
+6. Comandos são enviados de volta ao ESP8266
+
 ## 📦 Instalação
 
 ### Pré-requisitos
 
 - [PlatformIO](https://platformio.org/) instalado
 - Driver USB para ESP8266
+- **Aplicativo PlugMonitor** instalado para interface completa (consulte [README.md](https://github.com/BirdRa1n/PlugMonitor))
 
 ### Passos
 
@@ -57,6 +84,21 @@ pio device monitor
 ```
 
 ## 🚀 Uso
+
+### Setup Completo do Sistema
+
+Para usar o sistema completo PlugMonitor:
+
+1. **Configure o Hardware** (este projeto):
+   - Monte o circuito ESP8266 + ACS712
+   - Faça upload do firmware
+   - Conecte via USB ao computador
+
+2. **Instale o Software Desktop**:
+   - Baixe e instale o aplicativo PlugMonitor ([README.md]([README.md](https://github.com/BirdRa1n/PlugMonitor)))
+   - Execute o aplicativo
+   - Selecione a porta serial do ESP8266
+   - Comece o monitoramento!
 
 ### Monitoramento Básico
 
@@ -198,7 +240,7 @@ Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICE
 
 ## 👨‍💻 Autor
 
-**Dário Jr** - [GitHub](https://github.com/seu-usuario)
+**Dário Jr** - [GitHub](https://github.com/birdra1n)
 
 ## 🙏 Agradecimentos
 
